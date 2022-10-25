@@ -8,6 +8,7 @@ from posts.models import Comment, Post, Group, Follow, User
 
 
 class Base64ImageField(serializers.ImageField):
+    """ Сериалайзер для форматировани."""
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
@@ -18,12 +19,14 @@ class Base64ImageField(serializers.ImageField):
 
 
 class GroupSerializer(serializers.ModelSerializer):
+    """ Сериалайзер для модели Group."""
     class Meta:
         model = Group
         fields = ('id', 'title', 'slug', 'description')
 
 
 class PostSerializer(serializers.ModelSerializer):
+    """ Сериалайзер для модели Post."""
     author = SlugRelatedField(
         slug_field='username',
         read_only=True,
@@ -33,10 +36,12 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = '__all__'
+        read_only_fields = ('author',)
         model = Post
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """ Сериалайзер для модели Comment."""
     author = serializers.SlugRelatedField(
         read_only=True,
         slug_field='username',
@@ -46,10 +51,12 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Comment
+        read_only_fields =('post',)
 
 
 class FollowSerializer(serializers.ModelSerializer):
-
+    """ Сериалайзер для модели Follow со встроенной функцией валидации
+    невозможности подписаться на самого себя."""
     user = serializers.SlugRelatedField(
         read_only=True,
         slug_field='username',
@@ -69,7 +76,8 @@ class FollowSerializer(serializers.ModelSerializer):
             )
         ]
 
-    def validate(self, data):
-        if data['following'] == self.context.get('request').user:
+    def validate_following(self, data):
+        if data == self.context.get('request').user:
             raise serializers.ValidationError('Невозможно подписаться на себя')
+
         return data
